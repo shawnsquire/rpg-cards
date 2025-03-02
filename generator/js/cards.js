@@ -3,9 +3,9 @@
 // ============================================================================
 function card_default_options() {
     return {
-        foreground_color: "white",
+        foreground_color: "black",
         background_color: "white",
-        default_color: "black",
+        default_color: "white",
         default_icon_front: "",
         default_icon_back: "",
         default_title_size: "13",
@@ -65,11 +65,11 @@ function card_remove_tag(card, tag) {
 // ============================================================================
 
 function card_data_color_front(card_data, options) {
-    return card_data.color_front || card_data.color || options.default_color || "black";
+    return card_data.color_front || card_data.color || options.default_color || "white";
 }
 
 function card_data_color_back(card_data, options) {
-    return card_data.color_back || card_data.color || options.default_color || "black";
+    return card_data.color_back || card_data.color || options.default_color || "white";
 }
 
 function card_data_icon_front(card_data, options) {
@@ -524,7 +524,8 @@ function card_generate_contents(contents, card_data, options) {
 
     });
 
-    result += '<div class="card-content-container">';
+    var color = card_data_color_front(card_data, options);
+    result += '<div class="card-content-container" style="border-color: ' + color + '">';
     result += html;
     result += '</div>';
     return result;
@@ -538,12 +539,17 @@ function card_repeat(card, count) {
     return result;
 }
 
-function card_generate_color_style(color, options) {
-    return 'style="color:' + color + '; border-color:' + color + '; background-color:' + color + '"';
+function card_generate_border_style(color, options) {
+    return 'style="border: 1mm solid ' + color + ';"';
 }
 
 function card_generate_color_gradient_style(color, options) {
     return 'style="background: radial-gradient(ellipse at center, white 20%, ' + color + ' 120%)"';
+}
+
+function card_generate_size_style(width, height) {
+    // style string example ----> `style="color:red;"`
+    return 'style="width:' + width + ';height:' + height + ';"';
 }
 
 function add_size_to_style(style, width, height) {
@@ -552,34 +558,35 @@ function add_size_to_style(style, width, height) {
     return style;
 }
 
-function card_generate_front(data, options) {
+async function card_generate_front(data, options) {
     var color = card_data_color_front(data, options);
-    var style_color = card_generate_color_style(color, options);
-    var card_style = add_size_to_style(style_color, options.card_width, options.card_height);
+    var card_style = card_generate_size_style(options.card_width, options.card_height);
 
     var result = "";
-    result += '<div class="card ' + (options.rounded_corners ? 'rounded-corners' : '') + '" ' + card_style + '>';
-    result += '<div class="card-header">';
-    result += card_element_title(data, options);
-    result += card_element_icon(data, options);
-    result += '</div>';
-    result += card_generate_contents(data.contents, data, options);
+    result += '<div class="card' + (options.rounded_corners ? ' rounded-corners' : '') + '" ' + card_style + '>';
+        result += '<div class="card-container card-container-front" style="border-color: ' + color + '">';
+            result += '<div class="card-header" style="background-color: ' + color + ';">';
+                result += card_element_title(data, options);
+                result += card_element_icon(data, options);
+            result += '</div>';
+            result += card_generate_contents(data.contents, data, options);
+        result += '</div>';
     result += '</div>';
 
     return result;
 }
 
-function card_generate_back(data, options) {
+async function card_generate_back(data, options) {
     var color = card_data_color_back(data, options);
-    var style_color = card_generate_color_style(color, options);
+    var icon_color = 'style="color:' + color + ';"';
 
     var width = options.card_width;
     var height = options.card_height;
 
-    var card_style = add_size_to_style(style_color, width, height);
+    var card_style = add_size_to_style('style=""', width, height);
 
     var $tmpCardContainer = $('<div style="position:absolute;visibility:hidden;pointer-events:none;"></div>');
-    var $tmpCard = $('<div class="card" ' + card_style + '><div class="card-back"><div class="card-back-inner"><div class="card-back-icon"></div></div></div></div>');
+    var $tmpCard = $('<div class="card" ' + card_style + '><div class="card-container"><div class="card-back"><div class="card-back-inner"><div class="card-back-icon"></div></div></div></div></div>');
     $('#preview-container').append($tmpCardContainer.append($tmpCard));
     
     var $tmpCardInner = $tmpCard.find('.card-back-inner');
@@ -588,7 +595,7 @@ function card_generate_back(data, options) {
     var iconSize = Math.min(innerWidth, innerHeight) / 2 + 'px';
     $tmpCard.remove();
 
-    var icon_style = add_size_to_style(style_color, iconSize, iconSize);
+    var icon_style = add_size_to_style(icon_color, iconSize, iconSize);
 
 	var url = data.background_image;
 	var background_style = "";
@@ -604,13 +611,17 @@ function card_generate_back(data, options) {
 
     var result = "";
     result += '<div class="card' + ' ' + (options.rounded_corners ? 'rounded-corners' : '') + '" ' + card_style + '>';
+    result += '  <div class="card-container card-container-back">';
     result += '  <div class="card-back" ' + background_style + '>';
 	if (!url)
 	{
 		result += '    <div class="card-back-inner">';
-		result += '      <div class="card-back-icon icon-' + icon + '" ' + icon_style + '></div>';
+		result += '      <div class="card-back-icon icon-' + icon + '" ' + icon_style + '>';
+        result += await getSVGHTML(icon, color);
+        result += '      </div>';
 		result += '    </div>';
 	}
+    result += '  </div>';
     result += '  </div>';
     result += '</div>';
 
@@ -618,7 +629,7 @@ function card_generate_back(data, options) {
 }
 
 function card_generate_empty(count, options) {
-    var style_color = card_generate_color_style("white");
+    var style_color = 'style=""';
     var card_style = add_size_to_style(style_color, options.card_width, options.card_height);
 
     var result = "";
@@ -752,7 +763,7 @@ function card_pages_generate_style(options) {
     return result;
 }
 
-function card_pages_generate_html(card_data, options) {
+async function card_pages_generate_html(card_data, options) {
     options = options || card_default_options();
     var rows = options.page_rows || 3;
     var cols = options.page_columns || 3;
@@ -760,13 +771,17 @@ function card_pages_generate_html(card_data, options) {
     // Generate the HTML for each card
     var front_cards = [];
     var back_cards = [];
-    card_data.forEach(function (data) {
-        var count = options.card_count || data.count || 1;
-        var front = card_generate_front(data, options);
-        var back = card_generate_back(data, options);
+    const cardPromises = card_data.map(async (data) => {
+        const count = options.card_count || data.count || 1;
+        const [front, back] = await Promise.all([
+            card_generate_front(data, options),
+            card_generate_back(data, options)
+        ]);
         front_cards = front_cards.concat(card_repeat(front, count));
         back_cards = back_cards.concat(card_repeat(back, count));
     });
+
+    await Promise.all(cardPromises);
 
     var pages = [];
     if (options.card_arrangement === "doublesided") {
@@ -807,6 +822,32 @@ function card_pages_insert_into(card_data, container) {
     }
 
     // Insert the HTML
-    var html = card_pages_generate_html(card_data);
-    container.innerHTML = html;
+    card_pages_generate_html(card_data).then(html => {
+        container.innerHTML = html;
+    });
 }
+
+/**
+ * Fetches an SVG file, optionally replacing its fill attribute,
+ * and returns the SVG markup as a string.
+ *
+ * @param {string} icon - The icon name (without extension).
+ * @param {string} [color] - Optional color to apply to the SVG's fill.
+ * @returns {Promise<string>} - Promise resolving to the SVG HTML string.
+ */
+async function getSVGHTML(icon, color) {
+  try {
+    const response = await fetch(`./icons/${icon}.svg`);
+    let svgText = await response.text();
+
+    // Replace any fill attribute with the provided color (or currentColor if not provided)
+    const newFill = color ? `fill="${color}"` : 'fill="currentColor"';
+    svgText = svgText.replace(/fill="[^"]*"/g, newFill);
+
+    return svgText;
+  } catch (err) {
+    console.error('Error loading SVG:', err);
+    return '';
+  }
+}
+

@@ -41,20 +41,23 @@ function ui_generate() {
     }
 
     // Generate output HTML
-    var card_html = card_pages_generate_html(card_data, card_options);
+    card_pages_generate_html(card_data, card_options).then(card_html => {
 
-    // Open a new window for the output
-    // Use a separate window to avoid CSS conflicts
-    var tab = window.open("output.html", 'rpg-cards-output');
+        // Open a new window for the output
+        // Use a separate window to avoid CSS conflicts
+        var tab = window.open("output.html", 'rpg-cards-output');
 
-    if (ui_generate_modal_shown === false) {
-        $("#print-modal").modal('show');
-        ui_generate_modal_shown = true;
-    }
+        if (ui_generate_modal_shown === false) {
+            $("#print-modal").modal('show');
+            ui_generate_modal_shown = true;
+        }
 
-    // Send the generated HTML to the new window
-    // Use a delay to give the new window time to set up a message listener
-    setTimeout(function () { tab.postMessage(card_html, '*'); }, 500);
+        // Send the generated HTML to the new window
+        // Use a delay to give the new window time to set up a message listener
+        setTimeout(function () {
+            tab.postMessage(card_html, '*');
+        }, 500);
+    });
 }
 
 function ui_load_sample() {
@@ -203,12 +206,15 @@ function ui_update_selected_card() {
     ui_render_selected_card();
 }
 
-function ui_render_selected_card() {
-    var card = ui_selected_card();
+async function ui_render_selected_card() {
+    const card = ui_selected_card();
     $('#preview-container').empty();
+
     if (card) {
-        var front = card_generate_front(card, card_options);
-        var back = card_generate_back(card, card_options);
+        const [front, back] = await Promise.all([
+            card_generate_front(card, card_options),
+            card_generate_back(card, card_options)
+        ]);
         $('#preview-container').html(front + "\n" + back);
     }
     local_store_save();
