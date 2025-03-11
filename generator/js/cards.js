@@ -10,9 +10,9 @@ function card_default_options() {
         default_icon_back: "",
         default_title_size: "13",
         default_card_font_size: "inherit",
-        page_size: "210mm,297mm",
-        page_rows: "3",
-        page_columns: "3",
+        page_size: "11in,8.5in",
+        page_rows: "2",
+        page_columns: "4",
         page_zoom: "100",
         card_arrangement: "doublesided",
         card_size: "2.5in,3.5in",
@@ -20,7 +20,7 @@ function card_default_options() {
         card_height: "3.5in",
         card_count: null,
         icon_inline: true,
-        rounded_corners: true
+        rounded_corners: false
     };
 }
 
@@ -752,11 +752,12 @@ function card_pages_generate_style(options) {
     const portrait = parseFloat(page_width) < parseFloat(page_height);
     const pw = portrait ? page_width : page_height;
     const ph = portrait ? page_height : page_width;
+    const orientation = portrait ? "portrait" : "landscape";
     var result = "";
     result += "<style>\n";
     result += "@page {\n";
     result += "    margin: 0;\n";
-    result += "    size:" + pw + " " + ph + ";\n";
+    result += "    size:" + pw + " " + ph + " " + orientation + ";\n";
     result += "    -webkit-print-color-adjust: exact;\n";
     result += "}\n";
     result += "</style>\n";
